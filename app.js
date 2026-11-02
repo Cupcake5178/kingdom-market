@@ -23,7 +23,7 @@ function checkAdmin(){
     clean();
   }).catch(clean);
 }
-var CATS = ["Misc","Food","Ores","Blocks","Redstone","Tools & Combat"];
+var CATS = ["Misc","Armor","Tools & Combat","Fireworks","Food","Ores","Blocks","Redstone"];
 var ARROW = '<svg class="arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg>';
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}

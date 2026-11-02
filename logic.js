@@ -11,7 +11,10 @@
   };
   L.search = function (items, q) {
     q = (q || "").toLowerCase().trim();
-    return items.filter(function (i) { return !q || i.name.toLowerCase().indexOf(q) >= 0 || i.id.indexOf(q) >= 0; });
+    var r = items.filter(function (i) { return !q || i.name.toLowerCase().indexOf(q) >= 0 || i.id.indexOf(q) >= 0; });
+    if (!q) return r;
+    function rank(i) { var n = i.name.toLowerCase(); return (i.id === q || n === q) ? 0 : (n.indexOf(q) === 0 || i.id.indexOf(q) === 0) ? 1 : 2; }
+    return r.map(function (i, k) { return [rank(i), k, i]; }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (x) { return x[2]; });
   };
   L.filterSort = function (rows, o) {
     o = o || {};
@@ -101,7 +104,9 @@
   };
   L.guessCategory = function (id) {
     id = L.iconId(id);
-    if (/sword|pickaxe|axe|shovel|hoe|bow|trident|mace|helmet|chestplate|leggings|boots|shield|arrow/.test(id)) return "Tools & Combat";
+    if (/helmet|chestplate|leggings|boots|horse_armor|wolf_armor/.test(id)) return "Armor";
+    if (/firework|gunpowder/.test(id)) return "Fireworks";
+    if (/sword|pickaxe|axe|shovel|hoe|bow|trident|mace|shield|arrow/.test(id)) return "Tools & Combat";
     if (/redstone|piston|observer|hopper|comparator|repeater|dropper|dispenser|lever/.test(id)) return "Redstone";
     if (/ingot|diamond$|emerald$|nugget|_ore|raw_|scrap|quartz|lapis|coal/.test(id)) return "Ores";
     if (/apple|carrot|beef|pork|bread|stew|potato|chicken|mutton|cookie|pie|melon|berries/.test(id)) return "Food";
