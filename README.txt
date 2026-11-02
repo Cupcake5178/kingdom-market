@@ -1,4 +1,4 @@
-BlockBazaar - Minecraft (DonutSMP) Auction Price Tracker
+Kingdom Market - Auction Price Tracker for Kingdom SMP (kingdom-smp.net) - fan made, not affiliated
 ========================================================
 
 QUICK START (no install needed)
@@ -31,18 +31,18 @@ proxy.js, start-proxy.bat - optional live-data helper
 mod/      - Fabric mod jar + full source (mod/src-project, build: gradlew build, Java 25)
 
 MOD MODE (recommended for servers with NO API)
-Mod: mod/BlockBazaar-AHLogger-1.0.0.jar  (Minecraft Java 26.2, Fabric)
+Mod: mod/KingdomMarket-AHLogger-1.0.0.jar  (Minecraft Java 26.2, Fabric)
 It only WATCHES screens you open yourself. It never clicks, never
 types in chat, never sends commands. (Still check the server's rules
 on client mods.)
 1. Install Fabric Loader 0.20.1+ for Minecraft 26.2 (fabricmc.net/use).
 2. Put BOTH files in your .minecraft\mods folder
    (Win+R, type %appdata%\.minecraft\mods, Enter):
-     - BlockBazaar-AHLogger-1.0.0.jar
+     - KingdomMarket-AHLogger-1.0.0.jar
      - Fabric API for 26.2 (from modrinth.com/mod/fabric-api)
 3. Start Minecraft with the Fabric profile, join the server.
 4. Type /ah yourself and flip through the pages. Each new page shows
-   "BlockBazaar: saved N listings" above your hotbar.
+   "Kingdom Market: saved N listings" above your hotbar.
 5. Open index.html > Settings > "Mod / Bot mode" > Save.
    (Minecraft must be running; the mod serves data on
    http://localhost:3000.)
@@ -108,7 +108,7 @@ data/history.json from the repo. Until something is uploaded it shows example da
 
 To make the mod upload your prices automatically:
  1. Go to https://github.com/settings/personal-access-tokens/new  (fine-grained token)
-    - Token name: BlockBazaar   - Expiration: whatever you like (e.g. 90 days)
+    - Token name: Kingdom Market   - Expiration: whatever you like (e.g. 90 days)
     - Repository access: "Only select repositories" -> blockbazaar
     - Permissions -> Repository permissions -> Contents: "Read and write"
     - Click Generate token and copy it (starts with github_pat_).
@@ -117,9 +117,15 @@ To make the mod upload your prices automatically:
         "githubToken": "github_pat_....",
     (githubRepo "Cupcake5178/blockbazaar", githubBranch "main", uploadMinutes 5 are already set.)
  4. Play and open /ah. After you browse, the mod uploads at most once every uploadMinutes
-    and the action bar shows "BlockBazaar: uploaded". Errors go to the Minecraft log.
+    and the action bar shows "Kingdom Market: uploaded". Errors go to the Minecraft log.
  5. The website updates about 1-2 minutes later (GitHub Pages caching). Refresh the page.
 The bot works the same way: put the token in bot\config.json "githubToken".
 
 !! NEVER share blockbazaar.json / bot\config.json or post them anywhere once the token is in.
 !! Never put the token in the repo. If it leaks, delete it on GitHub's token page and make a new one.
+
+NOTE (rename): the site is now called Kingdom Market. If you installed the older
+BlockBazaar-AHLogger-1.0.0.jar, DELETE it from .minecraft\mods and use
+KingdomMarket-AHLogger-1.0.0.jar instead (your config\blockbazaar.json and saved data
+keep working - the internal file names stayed the same). The GitHub repo is still
+called "blockbazaar" so the website address and the uploader config stay valid.

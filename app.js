@@ -1,4 +1,4 @@
-/* BlockBazaar - main UI. Routes: #/ #/item/<id> #/listings #/sales #/portfolio #/settings */
+/* Kingdom Market - main UI. Routes: #/ #/item/<id> #/listings #/sales #/portfolio #/settings */
 var DATA = window.EXAMPLE_DATA, L = window.Logic, ICONS = window.ICONS || {}, $app = document.getElementById("app");
 var settings = Object.assign({key:"",proxy:"http://localhost:3000",botUrl:"http://localhost:3000"}, JSON.parse(localStorage.getItem("bb-settings") || "{}"));
 var HOSTED = /github\.io$/.test(location.hostname);
@@ -20,26 +20,43 @@ function setActive(r){document.querySelectorAll("#nav a").forEach(function(a){a.
 
 function card(i){
   var st=stackOf(i);
-  return '<a class="card" href="#/item/'+encodeURIComponent(i.id)+'">'+ARROW+'<div class="top">'+icon(i)+'<div class="name">'+esc(i.name)+'</div></div>'+
+  return '<a class="card" href="#/item/'+encodeURIComponent(i.id)+'">'+ARROW+'<div class="top">'+icon(i)+'<div class="name">'+esc(i.name)+'<span class="cat">'+esc(i.category||L.guessCategory(i.id))+'</span></div></div>'+
     '<div class="bottom"><span class="label">Value<div class="chg">7d '+chg(L.change(i.history,7))+'</div></span><span class="value">'+L.money(i.price)+(st>1?'<span class="stack">x'+st+' '+L.money(i.price*st)+'</span>':'')+'</span></div></a>';
 }
+var CROWN='<svg viewBox="0 0 24 24" width="18" height="18" fill="#E0B84A"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>';
+var homeCat="all";
+function copyIP(){var ip="kingdom-smp.net",done=function(){var t=document.createElement("div");t.className="toast";t.textContent="Copied kingdom-smp.net";document.body.appendChild(t);setTimeout(function(){t.remove();},1600);};
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(ip).then(done,function(){prompt("Copy the server IP:",ip);});
+  else{var x=document.createElement("textarea");x.value=ip;document.body.appendChild(x);x.select();try{document.execCommand("copy");done();}catch(e){prompt("Copy the server IP:",ip);}x.remove();}}
 function home(){
-  $app.innerHTML='<section class="hero"><h1><span class="brand">BlockBazaar</span> - Auction Price Tracker</h1><p>For Minecraft servers &middot; not affiliated with any server</p></section>'+
-    '<div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" placeholder="Search auction items..." autocomplete="off"></div><div id="sections"></div>';
+  $app.innerHTML='<section class="hero bricks"><div class="row"><div><h1><span class="brand">Kingdom</span> Market</h1><p>Auction Price Tracker for Kingdom SMP &middot; kingdom-smp.net &middot; Not affiliated</p></div>'+
+    '<div class="ip"><span class="lbl">Server IP</span><code>kingdom-smp.net</code><button id="cp" title="Copy server IP"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy</button></div></div>'+
+    '<div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" placeholder="Search the market..." autocomplete="off"></div></section>'+
+    '<div class="layout"><aside class="side" id="side"></aside><div><div id="moverbox"></div><div id="sections"></div></div></div>';
+  document.getElementById("cp").onclick=copyIP;
   var q=document.getElementById("q");
+  function catOf(i){return i.category||L.guessCategory(i.id);}
   function draw(){
-    var list=L.search(DATA.items,q.value),html="";
-    if(q.value.trim()){html='<h2 class="section">Results ('+list.length+')</h2>'+(list.length?'<div class="grid">'+list.map(card).join("")+'</div>':'<p class="empty">No items match "'+esc(q.value)+'".</p>');}
-    else{
-      var pop=list.filter(function(i){return i.popular;});
-      if(!pop.length)pop=list.slice().sort(function(a,b){return b.price-a.price;}).slice(0,4);
-      html='<h2 class="section">Popular Investments</h2><div class="grid">'+pop.map(card).join("")+'</div>';
-      var cats={};list.forEach(function(i){var c=i.category||L.guessCategory(i.id);(cats[c]=cats[c]||[]).push(i);});
-      CATS.concat(Object.keys(cats).filter(function(c){return CATS.indexOf(c)<0;})).forEach(function(c){
-        if(!cats[c])return;var arr=cats[c].filter(function(i){return !i.popular;}).sort(function(a,b){return b.price-a.price;});
-        if(arr.length)html+='<h2 class="section">'+esc(c)+'</h2><div class="grid">'+arr.map(card).join("")+'</div>';});
-      if(!list.length)html='<p class="empty">No items yet. If you use Mod/Bot mode, open the auction house in-game and flip a few pages.</p>';
-    }
+    var all=DATA.items,cats={};all.forEach(function(i){var c=catOf(i);cats[c]=(cats[c]||0)+1;});
+    var order=CATS.filter(function(c){return cats[c];}).concat(Object.keys(cats).filter(function(c){return CATS.indexOf(c)<0;}));
+    var pop=all.filter(function(i){return i.popular;});if(!pop.length)pop=all.slice().sort(function(a,b){return b.price-a.price;}).slice(0,4);
+    if(homeCat!=="all"&&homeCat!=="popular"&&!cats[homeCat])homeCat="all";
+    document.getElementById("side").innerHTML='<h4>Categories</h4>'+[["all","All items",all.length],["popular","Popular",pop.length]].concat(order.map(function(c){return [c,c,cats[c]];}))
+      .map(function(c){return '<button data-c="'+esc(c[0])+'" class="'+(homeCat===c[0]?"on":"")+'"><span>'+esc(c[1])+'</span><span class="n">'+c[2]+'</span></button>';}).join("");
+    document.querySelectorAll("#side button").forEach(function(b){b.onclick=function(){homeCat=b.dataset.c;draw();};});
+    var list=L.search(all,q.value),html="";
+    if(homeCat==="popular")list=list.filter(function(i){return pop.indexOf(i)>=0;});else if(homeCat!=="all")list=list.filter(function(i){return catOf(i)===homeCat;});
+    // Top movers strip (biggest 7d moves)
+    var mv=all.filter(function(i){return i.history&&i.history.length>1;}).map(function(i){return [i,L.change(i.history,7)];}).filter(function(x){return isFinite(x[1])&&x[1]!==0;})
+      .sort(function(a,b){return Math.abs(b[1])-Math.abs(a[1]);}).slice(0,8);
+    document.getElementById("moverbox").innerHTML=(mv.length&&!q.value.trim())?'<div class="subhead">'+CROWN+'Top Movers &middot; 7 days</div><div class="movers">'+mv.map(function(x){
+      return '<a class="mover" href="#/item/'+encodeURIComponent(x[0].id)+'">'+icon(x[0])+'<b>'+esc(x[0].name)+'</b>'+chg(x[1])+'</a>';}).join("")+'</div>':"";
+    function sect(t,arr){return arr.length?'<div class="ribbon"><span>'+esc(t)+'</span></div><div class="grid">'+arr.map(card).join("")+'</div>':"";}
+    var byP=function(a,b){return b.price-a.price;};
+    if(q.value.trim())html=sect("Results ("+list.length+")",list.slice().sort(byP));
+    else if(homeCat==="all"){html=sect("Popular Investments",pop);order.forEach(function(c){html+=sect(c,list.filter(function(i){return catOf(i)===c&&pop.indexOf(i)<0;}).sort(byP));});}
+    else html=sect(homeCat==="popular"?"Popular Investments":homeCat,list.slice().sort(byP));
+    if(!html)html=all.length?'<p class="empty">No items match "'+esc(q.value)+'".</p>':'<p class="empty">No items yet. If you use Mod/Bot mode, open the auction house in-game and flip a few pages.</p>';
     document.getElementById("sections").innerHTML=html;
   }
   q.oninput=draw;draw();
@@ -102,7 +119,7 @@ function detail(id){
   var it=item(id);if(!it){$app.innerHTML='<a class="crumb" href="#/">← All items</a><div class="panel empty">Item not found.</div>';return;}
   var ls=DATA.listings.filter(function(l){return l.itemId===id;}),ss=DATA.sales.filter(function(s){return s.itemId===id;});
   var low=ls.length?Math.min.apply(null,ls.map(function(l){return l.priceEach;})):null,st=stackOf(it);
-  $app.innerHTML='<a class="crumb" href="#/">← All items</a><div class="panel"><div class="detail">'+icon(it,"lg")+'<div style="flex:1;min-width:220px"><div class="muted">'+esc(it.category||L.guessCategory(it.id))+'</div><h1>'+esc(it.name)+'</h1><div class="big">'+L.money(it.price)+'</div>'+
+  $app.innerHTML='<a class="crumb" href="#/">← All items</a><div class="panel crown"><div class="detail">'+icon(it,"lg")+'<div style="flex:1;min-width:220px"><div class="muted">'+esc(it.category||L.guessCategory(it.id))+'</div><h1>'+esc(it.name)+'</h1><div class="big">'+L.money(it.price)+'</div>'+
     (st>1?'<div class="muted">x'+st+' stack '+L.money(it.price*st)+'</div>':'')+'</div><button class="btn primary" id="addp">+ Add to portfolio</button></div>'+
     '<div class="stats"><div class="stat"><div class="k">Lowest listing</div><div class="v">'+L.money(low)+'</div></div><div class="stat"><div class="k">24h</div><div class="v">'+chg(L.change(it.history,1))+'</div></div>'+
     '<div class="stat"><div class="k">7 days</div><div class="v">'+chg(L.change(it.history,7))+'</div></div><div class="stat"><div class="k">30 days</div><div class="v">'+chg(L.change(it.history,30))+'</div></div>'+
@@ -134,8 +151,8 @@ function settingsPage(){
   function opt(v,t,s){return '<label class="radio"><input type="radio" name="src" value="'+v+'"><span><b>'+t+'</b><small>'+s+'</small></span></label>';}
   $app.innerHTML='<div class="pagehead"><h1>Settings</h1></div><div class="panel"><h3>Data source</h3>'+
   opt("example","Example data","Fake prices, works offline. Good for trying the site.")+
-  opt("online","Online (shared)","Prices uploaded by the BlockBazaar mod to this site's GitHub repo. Default on the hosted site.")+
-  opt("bot","Mod / Bot mode","Reads from the BlockBazaar Fabric mod (open /ah in-game) or the bot (start-bot.bat). Works on any server.")+
+  opt("online","Online (shared)","Prices uploaded by the Kingdom Market mod to this site's GitHub repo. Default on the hosted site.")+
+  opt("bot","Mod / Bot mode","Reads from the Kingdom Market Fabric mod (open /ah in-game) or the bot (start-bot.bat). Works on any server.")+
   opt("api","DonutSMP API mode","Needs an API key (type /api in DonutSMP) and start-proxy.bat running.")+
   '<label class="field">Mod / Bot URL<input class="f" id="bu" value="'+esc(settings.botUrl)+'"></label>'+
   '<label class="field">DonutSMP API key<input class="f" id="ky" type="password" value="'+esc(settings.key)+'"></label>'+
