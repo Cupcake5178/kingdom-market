@@ -3,6 +3,26 @@ var DATA = window.EXAMPLE_DATA, L = window.Logic, ICONS = window.ICONS || {}, $a
 var settings = Object.assign({key:"",proxy:"http://localhost:3000",botUrl:"http://localhost:3000"}, JSON.parse(localStorage.getItem("bb-settings") || "{}"));
 var HOSTED = /github\.io$/.test(location.hostname);
 if (!settings.source) settings.source = settings.live ? "api" : (HOSTED ? "online" : "example");
+/* Admin mode (hosted site only). Visit once with ?admin=<secret> to unlock advanced settings in THIS browser.
+   NOTE: this is a convenience lock to keep visitors from confusing themselves - NOT real security.
+   The site is static, settings only live in each visitor's own browser, and the shared prices can
+   only be changed by someone holding the GitHub token. Only the SHA-256 hash of the secret is stored here. */
+var ADMIN_HASH = "aaf39e5969d5c958fb7183a002a4b31d0583d02dc03a34f1757226267414efbe";
+var ADMIN = !HOSTED || localStorage.getItem("bb-admin") === "1";
+function lockdown(){ if (!ADMIN) settings.source = "online"; }  // visitors always use the shared online data
+lockdown();
+if (localStorage.getItem("bb-compact") === "1") document.documentElement.classList.add("compact");
+function checkAdmin(){
+  var m = /[?&]admin=([^&#]*)/.exec(location.search);
+  if (!m || !HOSTED || !(window.crypto && crypto.subtle)) return Promise.resolve();
+  var clean = function(){ history.replaceState(null, "", location.pathname + location.hash); };
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(decodeURIComponent(m[1]))).then(function(buf){
+    var hex = Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2, "0"); }).join("");
+    if (hex === ADMIN_HASH) { localStorage.setItem("bb-admin", "1"); ADMIN = true;
+      var saved = JSON.parse(localStorage.getItem("bb-settings") || "{}"); if (saved.source) settings.source = saved.source; }
+    clean();
+  }).catch(clean);
+}
 var CATS = ["Misc","Food","Ores","Blocks","Redstone","Tools & Combat"];
 var ARROW = '<svg class="arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg>';
 
@@ -14,7 +34,7 @@ function chg(p){return '<span class="'+(p>=0?"up":"down")+'">'+(p>=0?"▲ ":"▼
 function stackOf(it){return it.stack||64;}
 function banner(msg,kind){var b=document.getElementById("banner");
   if(msg){b.className="banner "+(kind||"");b.innerHTML=esc(msg);return;}
-  if(DATA.isExample){b.className="banner";b.innerHTML='Showing example data &middot; <a href="#/settings">Connect real data</a>';}
+  if(DATA.isExample){b.className="banner";b.innerHTML='Showing example data'+(ADMIN?' &middot; <a href="#/settings">Connect real data</a>':'');}
   else{b.className="banner live";b.innerHTML=DATA.source==="online"?"Online shared data &middot; updated "+esc(DATA.time?new Date(DATA.time).toLocaleString():"-"):DATA.source==="bot"?"Mod/Bot data &middot; last scan "+esc(DATA.time?new Date(DATA.time).toLocaleString():"not yet"):"Live DonutSMP API data";}}
 function setActive(r){document.querySelectorAll("#nav a").forEach(function(a){a.classList.toggle("active",a.dataset.r===r);});}
 
@@ -147,9 +167,9 @@ function portfolio(){
   document.querySelectorAll("[data-i]").forEach(function(b){b.onclick=function(){p.splice(+b.dataset.i,1);localStorage.setItem("bb-port",JSON.stringify(p));portfolio();};});
 }
 
-function settingsPage(){
+function advancedSettings(){
   function opt(v,t,s){return '<label class="radio"><input type="radio" name="src" value="'+v+'"><span><b>'+t+'</b><small>'+s+'</small></span></label>';}
-  $app.innerHTML='<div class="pagehead"><h1>Settings</h1></div><div class="panel"><h3>Data source</h3>'+
+  return '<div class="panel"><h3>Data source'+(HOSTED?' <span class="muted">(admin)</span>':'')+'</h3>'+
   opt("example","Example data","Fake prices, works offline. Good for trying the site.")+
   opt("online","Online (shared)","Prices uploaded by the Kingdom Market mod to this site's GitHub repo. Default on the hosted site.")+
   opt("bot","Mod / Bot mode","Reads from the Kingdom Market Fabric mod (open /ah in-game) or the bot (start-bot.bat). Works on any server.")+
@@ -158,7 +178,19 @@ function settingsPage(){
   '<label class="field">DonutSMP API key<input class="f" id="ky" type="password" value="'+esc(settings.key)+'"></label>'+
   '<label class="field">API proxy URL<input class="f" id="px" value="'+esc(settings.proxy)+'"></label>'+
   '<button class="btn primary" id="sv">Save &amp; reload data</button> <span id="msg" class="muted"></span>'+
-  '<p class="muted">The mod, the bot and the API proxy all use port 3000 by default - run only one at a time.</p></div>';
+  '<p class="muted">The mod, the bot and the API proxy all use port 3000 by default - run only one at a time.</p><div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="rp">Reset portfolio</button>'+(HOSTED?'<button class="btn" id="lock">Lock admin</button>':'')+'</div></div>';
+}
+function settingsPage(){
+  var dark=document.documentElement.classList.contains("dark"),compact=document.documentElement.classList.contains("compact");
+  function tog(id,label,sub,on){return '<label class="radio"><input type="checkbox" id="'+id+'"'+(on?" checked":"")+'><span><b>'+label+'</b><small>'+sub+'</small></span></label>';}
+  $app.innerHTML='<div class="pagehead"><h1>Settings</h1></div><div class="panel crown"><h3>Appearance</h3>'+
+    tog("sd","Dark mode","Royal night theme.",dark)+tog("sc","Compact view","Smaller cards so more items fit on screen.",compact)+
+    (ADMIN?'':'<p class="muted">Prices come from the shared Kingdom Market data, uploaded from kingdom-smp.net by the site owner.</p>')+'</div>'+(ADMIN?advancedSettings():"");
+  sd.onchange=function(){document.documentElement.classList.toggle("dark",sd.checked);localStorage.setItem("bb-theme",sd.checked?"dark":"light");};
+  sc.onchange=function(){document.documentElement.classList.toggle("compact",sc.checked);localStorage.setItem("bb-compact",sc.checked?"1":"0");};
+  if(!ADMIN)return;
+  rp.onclick=function(){if(confirm("Delete all portfolio entries in this browser?")){localStorage.removeItem("bb-port");msg.textContent="Portfolio cleared.";}};
+  var lk=document.getElementById("lock");if(lk)lk.onclick=function(){localStorage.removeItem("bb-admin");ADMIN=false;lockdown();load().then(settingsPage);};
   document.querySelector('[name=src][value="'+settings.source+'"]').checked=true;
   document.getElementById("sv").onclick=function(){settings={source:document.querySelector("[name=src]:checked").value,key:ky.value.trim(),proxy:px.value.trim().replace(/\/$/,""),botUrl:bu.value.trim().replace(/\/$/,"")};
     localStorage.setItem("bb-settings",JSON.stringify(settings));msg.textContent="Loading...";load().then(function(){settingsPage();document.getElementById("msg").textContent=DATA.isExample?"Using example data.":"Loaded "+DATA.listings.length+" listings, "+DATA.items.length+" items.";});};
@@ -200,4 +232,4 @@ function route(keepScroll){var h=location.hash.replace(/^#\/?/,"").split("/");wi
   else if(h[0]==="sales")tablePage("Recent Sales","Latest completed auctions",DATA.sales,[COLS.item,COLS.count,COLS.each,COLS.total,COLS.seller,COLS.time],"time");
   else if(h[0]==="portfolio")portfolio();else if(h[0]==="settings")settingsPage();else home();
   if(keepScroll!==true)window.scrollTo(0,0);}
-window.onhashchange=function(){route();};load();
+window.onhashchange=function(){route();};checkAdmin().then(function(){lockdown();load();});

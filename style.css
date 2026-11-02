@@ -126,3 +126,4 @@ html.dark .mc{filter:drop-shadow(0 0 1px rgba(255,255,255,.35)) drop-shadow(0 0 
 @media (max-width:640px){.banner{font-size:12px;bottom:10px}.logo span{display:none}.hero{padding:24px 18px}.grid{grid-template-columns:1fr}.nav a.navl{padding:7px 9px}.nav a.navl span{display:none}.card .value{font-size:20px}.ip code{font-size:15px}}
 .layout>div{min-width:0}
 .ip code{white-space:nowrap}@media (max-width:640px){.ip .lbl{display:none}.ip{width:100%}.ip code{flex:1}}
+html.compact .grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}html.compact .card{padding:10px 12px}html.compact .card .mc{width:36px;height:36px}html.compact .card .top{min-height:40px}html.compact .card .name{font-size:15px}html.compact .card .value{font-size:17px}html.compact .card .bottom{margin-top:8px;padding-top:6px}
